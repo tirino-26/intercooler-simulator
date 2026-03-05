@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intercooler Prediction Tracker</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #e0e0e0;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            padding: 20px;
+            margin-bottom: 30px;
+            background: linear-gradient(135deg, #0f3460 0%, #16213e 100%);
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .header h1 {
+            color: #00d4ff;
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            color: #aaa;
+        }
+        
+        .input-section {
+            background: #1e3a5f;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .input-section h2 {
+            color: #00d4ff;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #0f3460;
+            padding-bottom: 10px;
+        }
+        
+        .input-row {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        
+        .input-group {
+            flex: 1;
+            min-width: 200px;
+        }
+        
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #00d4ff;
+            font-weight: 500;
+        }
+        
+        .input-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #0f3460;
+            border-radius: 8px;
+            background: #16213e;
+            color: #fff;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+        
+        .input-group input:focus {
+            outline: none;
+            border-color: #00d4ff;
+        }
+        
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
+            color: #1a1a2e;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 212, 255, 0.4);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #00cc66 0%, #009933 100%);
+            color: #fff;
+        }
+        
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 204, 102, 0.4);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #ff4444 0%, #cc0000 100%);
+            color: #fff;
+        }
+        
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(255, 68, 68, 0.4);
+        }
+        
+        .btn-small {
+            padding: 8px 15px;
+            font-size: 0.85rem;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        /* Change points section */
+        .change-points-section {
+            background: #1e3a5f;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .change-points-section h2 {
+            color: #00d4ff;
+            margin-bottom: 10px;
+            border-bottom: 2px solid #0f3460;
+            padding-bottom: 10px;
+        }
+        
+        .change-points-section .description {
+            color: #aaa;
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+        }
+        
+        .change-point-header {
+            display: grid;
+            grid-template-columns: 120px 1fr 1fr 80px;
+            gap: 15px;
+            padding: 10px 15px;
+            background: #0f3460;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: #00d4ff;
+        }
+        
+        .change-point-row {
+            display: grid;
+            grid-template-columns: 120px 1fr 1fr 80px;
+            gap: 15px;
+            margin-bottom: 10px;
+            padding: 10px 15px;
+            background: #16213e;
+            border-radius: 8px;
+            align-items: center;
+        }
+        
+        .change-point-row input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 2px solid #0f3460;
+            border-radius: 6px;
+            background: #1a1a2e;
+            color: #fff;
+            font-size: 0.95rem;
+        }
+        
+        .change-point-row input:focus {
+            outline: none;
+            border-color: #00d4ff;
+        }
+        
+        .btn-remove {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a5a 100%);
+            color: #fff;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.3s;
+        }
+        
+        .btn-remove:hover {
+            transform: scale(1.05);
+            box-shadow: 0 2px 10px rgba(255, 107, 107, 0.4);
+        }
+        
+        .add-row-btn {
+            margin-top: 15px;
+        }
+        
+        /* Preview section */
+        .preview-section {
+            background: #16213e;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .preview-section h4 {
+            color: #00d4ff;
+            margin-bottom: 10px;
+        }
+        
+        .preview-table {
+            width: 100%;
+            font-size: 0.85rem;
+        }
+        
+        .preview-table th, .preview-table td {
+            padding: 5px 10px;
+            text-align: center;
+            border-bottom: 1px solid #0f3460;
+        }
+        
+        .preview-table th {
+            color: #00d4ff;
+        }
+        
+        .preview-highlight {
+            background: rgba(0, 212, 255, 0.2);
+        }
+        
+        /* Results section */
+        .results-section {
+            background: #1e3a5f;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .results-section h2 {
+            color: #00d4ff;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #0f3460;
+            padding-bottom: 10px;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+            margin-bottom: 30px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 900px;
+        }
+        
+        th, td {
+            padding: 12px 15px;
+            text-align: center;
+            border-bottom: 1px solid #0f3460;
+        }
+        
+        th {
+            background: linear-gradient(135deg, #0f3460 0%, #1a1a2e 100%);
+            color: #00d4ff;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        tr:hover {
+            background: rgba(0, 212, 255, 0.1);
+        }
+        
+        .highlight-row {
+            background: rgba(255, 193, 7, 0.2) !important;
+        }
+        
+        .change-row {
+            background: rgba(0, 212, 255, 0.15) !important;
+        }
+        
+        /* Charts section */
+        .charts-section {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+            margin-top: 30px;
+        }
+        
+        .chart-card {
+            background: #16213e;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            width: 100%;
+        }
+        
+        .chart-card h3 {
+            color: #00d4ff;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 400px;
+        }
+        
+        /* Loading overlay */
+        .loading {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .loading.active {
+            display: flex;
+        }
+        
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 5px solid #0f3460;
+            border-top-color: #00d4ff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Export buttons */
+        .export-section {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.5rem;
+            }
+            
+            .input-row {
+                flex-direction: column;
+            }
+            
+            .charts-section {
+                grid-template-columns: 1fr;
+            }
+            
+            .change-point-header,
+            .change-point-row {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>Intercooler Prediction Tracker</h1>
+            <p>Digital Twin for LDPE Heat Exchanger - K1202E1A (Linear Regression Models)</p>
+        </div>
+        
+        <!-- Input Section -->
+        <div class="input-section">
+            <h2>Configuration Settings</h2>
+            <div class="input-row">
+                <div class="input-group">
+                    <label for="finalDay">Operating Day (Final)</label>
+                    <input type="number" id="finalDay" value="30" min="1" max="365">
+                </div>
+            </div>
+        </div>
+        
+        <!-- Change Points Section -->
+        <div class="change-points-section">
+            <h2>Input Change Points</h2>
+            <p class="description">
+                กำหนดค่า Inlet T CW และ Flow CW A ตาม Operating Day ที่ต้องการ<br>
+                ระบบจะ keep ค่าไปจนกว่าจะเจอ Day ใหม่ที่กำหนด (เรียงตาม Day จากน้อยไปมาก)
+            </p>
+            
+            <div class="change-point-header">
+                <span>Operating Day</span>
+                <span>Inlet T CW (°C)</span>
+                <span>Flow CW A (m³/hr)</span>
+                <span>Action</span>
+            </div>
+            
+            <div id="changePointsContainer">
+                <!-- Change point rows will be added here -->
+            </div>
+            
+            <button class="btn btn-primary add-row-btn" onclick="addChangePoint()">+ Add Row</button>
+            
+            <!-- Preview -->
+            <div class="preview-section">
+                <h4>Preview: Daily Values (first 10 days)</h4>
+                <table class="preview-table">
+                    <thead>
+                        <tr>
+                            <th>Day</th>
+                            <th>Inlet T CW</th>
+                            <th>Flow CW A</th>
+                        </tr>
+                    </thead>
+                    <tbody id="previewBody"></tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Action Buttons -->
+        <div class="input-section">
+            <div class="button-group">
+                <button class="btn btn-success" onclick="runPrediction()">Run Prediction</button>
+                <button class="btn btn-danger" onclick="clearAll()">Clear All</button>
+            </div>
+        </div>
+        
+        <!-- Results Section -->
+        <div class="results-section" id="resultsSection" style="display: none;">
+            <h2>Prediction Results</h2>
+            <div class="table-container">
+                <table id="resultsTable">
+                    <thead>
+                        <tr>
+                            <th>Operating Day</th>
+                            <th>Inlet T CW (°C)</th>
+                            <th>Flow CW A (m³/hr)</th>
+                            <th>Inlet T gas A pre (°C)</th>
+                            <th>Q_A_pre (kW)</th>
+                            <th>U_A_pre (W/m².K)</th>
+                            <th>Outlet T CW A pre (°C)</th>
+                            <th>Outlet T gas pre (°C)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultsBody"></tbody>
+                </table>
+            </div>
+            
+            <div class="export-section">
+                <button class="btn btn-primary" onclick="exportCSV()">Export CSV</button>
+                <button class="btn btn-primary" onclick="exportJSON()">Export JSON</button>
+            </div>
+            
+            <!-- Charts -->
+            <div class="charts-section">
+                <div class="chart-card">
+                    <h3>Outlet T gas Prediction (Criteria: 50°C)</h3>
+                    <div class="chart-container">
+                        <canvas id="chartTemp"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <h3>U_A Trend Over Operating Days</h3>
+                    <div class="chart-container">
+                        <canvas id="chartUA"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <h3>Heat Duty (Q_A) Over Operating Days</h3>
+                    <div class="chart-container">
+                        <canvas id="chartQA"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <h3>Cooling Water Temperature (Inlet vs Outlet)</h3>
+                    <div class="chart-container">
+                        <canvas id="chartCW"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Loading overlay -->
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+    </div>
+    
+    <script>
+        // Global variables
+        let predictionData = [];
+        let charts = {};
+        let changePointIdCounter = 0;
+        
+        // =====================================================================
+        // API Configuration - Use relative URL for network sharing
+        // =====================================================================
+        const API_BASE_URL = '';  // Empty = same host (works for network sharing)
+        
+        // Constants
+        const A_HEAT_TRANSFER = 198;  // m2
+        const CP_WATER = 4.18;  // kJ/kg.K
+        
+        // Initialize with default change point
+        function initializeChangePoints() {
+            addChangePoint(1, 32, 350);
+        }
+        
+        // Add a change point row
+        function addChangePoint(day = '', inletTCW = '', flowCWA = '') {
+            const container = document.getElementById('changePointsContainer');
+            const id = changePointIdCounter++;
+            
+            // If no values provided, get last values or defaults
+            if (day === '') {
+                const existingRows = container.querySelectorAll('.change-point-row');
+                if (existingRows.length > 0) {
+                    const lastRow = existingRows[existingRows.length - 1];
+                    const lastDay = parseInt(lastRow.querySelector('.cp-day').value) || 1;
+                    day = lastDay + 10;
+                    inletTCW = lastRow.querySelector('.cp-inlet-tcw').value || 32;
+                    flowCWA = lastRow.querySelector('.cp-flow-cwa').value || 350;
+                } else {
+                    day = 1;
+                    inletTCW = 32;
+                    flowCWA = 350;
+                }
+            }
+            
+            const row = document.createElement('div');
+            row.className = 'change-point-row';
+            row.id = `cp-row-${id}`;
+            row.innerHTML = `
+                <input type="number" class="cp-day" value="${day}" min="1" max="365" 
+                       placeholder="Day" onchange="updatePreview()">
+                <input type="number" class="cp-inlet-tcw" value="${inletTCW}" step="0.1" 
+                       min="0" max="50" placeholder="Inlet T CW" onchange="updatePreview()">
+                <input type="number" class="cp-flow-cwa" value="${flowCWA}" step="0.1" 
+                       min="0" max="500" placeholder="Flow CW A" onchange="updatePreview()">
+                <button class="btn-remove" onclick="removeChangePoint('cp-row-${id}')">Remove</button>
+            `;
+            container.appendChild(row);
+            updatePreview();
+        }
+        
+        // Remove a change point row
+        function removeChangePoint(rowId) {
+            const row = document.getElementById(rowId);
+            if (row) {
+                row.remove();
+                updatePreview();
+            }
+        }
+        
+        // Get sorted change points
+        function getChangePoints() {
+            const container = document.getElementById('changePointsContainer');
+            const rows = container.querySelectorAll('.change-point-row');
+            const points = [];
+            
+            rows.forEach(row => {
+                const day = parseInt(row.querySelector('.cp-day').value);
+                const inletTCW = parseFloat(row.querySelector('.cp-inlet-tcw').value);
+                const flowCWA = parseFloat(row.querySelector('.cp-flow-cwa').value);
+                
+                if (!isNaN(day) && !isNaN(inletTCW) && !isNaN(flowCWA)) {
+                    points.push({ day, inletTCW, flowCWA });
+                }
+            });
+            
+            // Sort by day
+            points.sort((a, b) => a.day - b.day);
+            return points;
+        }
+        
+        // Generate daily inputs from change points
+        function generateDailyInputs(finalDay) {
+            const changePoints = getChangePoints();
+            const dailyInputs = [];
+            
+            if (changePoints.length === 0) {
+                // Default values if no change points
+                for (let day = 1; day <= finalDay; day++) {
+                    dailyInputs.push({
+                        operating_day: day,
+                        inlet_T_CW: 32,
+                        flow_CW_A: 350
+                    });
+                }
+                return dailyInputs;
+            }
+            
+            let currentInletTCW = changePoints[0].inletTCW;
+            let currentFlowCWA = changePoints[0].flowCWA;
+            let changePointIdx = 0;
+            
+            for (let day = 1; day <= finalDay; day++) {
+                // Check if we need to update values at this day
+                while (changePointIdx < changePoints.length && changePoints[changePointIdx].day <= day) {
+                    currentInletTCW = changePoints[changePointIdx].inletTCW;
+                    currentFlowCWA = changePoints[changePointIdx].flowCWA;
+                    changePointIdx++;
+                }
+                
+                dailyInputs.push({
+                    operating_day: day,
+                    inlet_T_CW: currentInletTCW,
+                    flow_CW_A: currentFlowCWA
+                });
+            }
+            
+            return dailyInputs;
+        }
+        
+        // Update preview table
+        function updatePreview() {
+            const finalDay = parseInt(document.getElementById('finalDay').value) || 30;
+            const dailyInputs = generateDailyInputs(Math.min(finalDay, 10));
+            const changePoints = getChangePoints();
+            const changeDays = new Set(changePoints.map(cp => cp.day));
+            
+            const tbody = document.getElementById('previewBody');
+            tbody.innerHTML = '';
+            
+            dailyInputs.forEach(input => {
+                const tr = document.createElement('tr');
+                if (changeDays.has(input.operating_day)) {
+                    tr.classList.add('preview-highlight');
+                }
+                tr.innerHTML = `
+                    <td>${input.operating_day}</td>
+                    <td>${input.inlet_T_CW}</td>
+                    <td>${input.flow_CW_A}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+        
+        // =====================================================================
+        // PREDICTION VIA API (Random Forest models)
+        // =====================================================================
+        
+        // Run prediction via API
+        async function runPrediction() {
+            const loading = document.getElementById('loading');
+            loading.classList.add('active');
+            
+            try {
+                const finalDay = parseInt(document.getElementById('finalDay').value);
+                
+                // Generate daily inputs from change points
+                const dayInputs = generateDailyInputs(finalDay);
+                
+                // Call API for predictions
+                const response = await fetch(`${API_BASE_URL}/api/predict/batch`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ day_inputs: dayInputs })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`API Error: ${response.status} - ${response.statusText}`);
+                }
+                
+                const result = await response.json();
+                
+                // Map API response to expected format
+                predictionData = result.predictions.map(p => ({
+                    operating_day: p.operating_day,
+                    inlet_T_CW: p.inlet_T_CW,
+                    flow_CW_A: p.flow_CW_A,
+                    inlet_T_gas_A_pre: p.inlet_T_gas_A_pre,
+                    Q_A_pre: p.Q_A_pre,
+                    U_A_pre: p.U_A_pre,
+                    outlet_T_CW_A_pre: p.outlet_T_CW_A_pre,
+                    outlet_T_gas_pre: p.outlet_T_gas_pre
+                }));
+                
+                // Update table
+                updateResultsTable(predictionData);
+                
+                // Update charts
+                updateCharts(predictionData);
+                
+                document.getElementById('resultsSection').style.display = 'block';
+                
+                // Scroll to results
+                document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth' });
+                
+            } catch (error) {
+                console.error('Prediction error:', error);
+                alert('Error: Cannot connect to API server.\n\nPlease start the server with:\npython prediction_tracker_api.py\n\nError details: ' + error.message);
+            } finally {
+                loading.classList.remove('active');
+            }
+        }
+        
+        // Update results table
+        function updateResultsTable(data) {
+            const tbody = document.getElementById('resultsBody');
+            tbody.innerHTML = '';
+            
+            // Get change point days for highlighting
+            const changePoints = getChangePoints();
+            const changeDays = new Set(changePoints.map(cp => cp.day));
+            
+            data.forEach(row => {
+                const tr = document.createElement('tr');
+                
+                // Highlight change point rows
+                if (changeDays.has(row.operating_day)) {
+                    tr.classList.add('change-row');
+                }
+                
+                tr.innerHTML = `
+                    <td>${row.operating_day}</td>
+                    <td>${row.inlet_T_CW.toFixed(2)}</td>
+                    <td>${row.flow_CW_A.toFixed(2)}</td>
+                    <td>${row.inlet_T_gas_A_pre.toFixed(2)}</td>
+                    <td>${row.Q_A_pre.toFixed(2)}</td>
+                    <td>${row.U_A_pre.toFixed(2)}</td>
+                    <td>${row.outlet_T_CW_A_pre.toFixed(2)}</td>
+                    <td>${row.outlet_T_gas_pre.toFixed(2)}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+        
+        // Update charts
+        function updateCharts(data) {
+            const labels = data.map(d => d.operating_day);
+            
+            // Destroy existing charts
+            Object.values(charts).forEach(chart => chart.destroy());
+            
+            // Chart defaults
+            Chart.defaults.color = '#e0e0e0';
+            Chart.defaults.borderColor = '#0f3460';
+            
+            // U_A Chart
+            charts.ua = new Chart(document.getElementById('chartUA'), {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'U_A (W/m².K)',
+                        data: data.map(d => d.U_A_pre),
+                        borderColor: '#00d4ff',
+                        backgroundColor: 'rgba(0, 212, 255, 0.2)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top' }
+                    },
+                    scales: {
+                        x: { title: { display: true, text: 'Operating Day' } },
+                        y: { title: { display: true, text: 'U_A (W/m².K)' } }
+                    }
+                }
+            });
+            
+            // Outlet T gas Chart with 50°C Criteria Line
+            charts.temp = new Chart(document.getElementById('chartTemp'), {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Outlet T gas (°C)',
+                            data: data.map(d => d.outlet_T_gas_pre),
+                            borderColor: '#4ecdc4',
+                            backgroundColor: 'rgba(78, 205, 196, 0.2)',
+                            fill: true,
+                            tension: 0.4
+                        },
+                        {
+                            label: 'Criteria (50°C)',
+                            data: data.map(() => 50),
+                            borderColor: '#ff6b6b',
+                            backgroundColor: 'transparent',
+                            borderWidth: 2,
+                            borderDash: [10, 5],
+                            fill: false,
+                            pointRadius: 0,
+                            tension: 0
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top' },
+                        annotation: {
+                            annotations: {
+                                criteriaLine: {
+                                    type: 'line',
+                                    yMin: 50,
+                                    yMax: 50,
+                                    borderColor: '#ff6b6b',
+                                    borderWidth: 2,
+                                    borderDash: [10, 5],
+                                    label: {
+                                        content: 'Criteria 50°C',
+                                        enabled: true
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { title: { display: true, text: 'Operating Day' } },
+                        y: { 
+                            title: { display: true, text: 'Outlet T gas (°C)' },
+                            suggestedMin: 30,
+                            suggestedMax: 60
+                        }
+                    }
+                }
+            });
+            
+            // Q_A Chart
+            charts.qa = new Chart(document.getElementById('chartQA'), {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Q_A (kW)',
+                        data: data.map(d => d.Q_A_pre),
+                        backgroundColor: 'rgba(255, 193, 7, 0.6)',
+                        borderColor: '#ffc107',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top' }
+                    },
+                    scales: {
+                        x: { title: { display: true, text: 'Operating Day' } },
+                        y: { title: { display: true, text: 'Heat Duty (kW)' } }
+                    }
+                }
+            });
+            
+            // Cooling Water Chart
+            charts.cw = new Chart(document.getElementById('chartCW'), {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Inlet T CW (°C)',
+                            data: data.map(d => d.inlet_T_CW),
+                            borderColor: '#5c6bc0',
+                            backgroundColor: 'rgba(92, 107, 192, 0.2)',
+                            fill: false,
+                            tension: 0.4
+                        },
+                        {
+                            label: 'Outlet T CW (°C)',
+                            data: data.map(d => d.outlet_T_CW_A_pre),
+                            borderColor: '#26a69a',
+                            backgroundColor: 'rgba(38, 166, 154, 0.2)',
+                            fill: false,
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top' }
+                    },
+                    scales: {
+                        x: { title: { display: true, text: 'Operating Day' } },
+                        y: { title: { display: true, text: 'Temperature (°C)' } }
+                    }
+                }
+            });
+        }
+        
+        // Export to CSV
+        function exportCSV() {
+            if (predictionData.length === 0) {
+                alert('No data to export');
+                return;
+            }
+            
+            const headers = ['Operating Day', 'Inlet T CW', 'Flow CW A', 'Inlet T gas A pre', 
+                           'Q_A_pre', 'U_A_pre', 'Outlet T CW A pre', 'Outlet T gas pre'];
+            
+            let csv = headers.join(',') + '\n';
+            
+            predictionData.forEach(row => {
+                csv += `${row.operating_day},${row.inlet_T_CW},${row.flow_CW_A},${row.inlet_T_gas_A_pre},`;
+                csv += `${row.Q_A_pre},${row.U_A_pre},${row.outlet_T_CW_A_pre},${row.outlet_T_gas_pre}\n`;
+            });
+            
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `prediction_results_${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+        
+        // Export to JSON
+        function exportJSON() {
+            if (predictionData.length === 0) {
+                alert('No data to export');
+                return;
+            }
+            
+            const json = JSON.stringify({
+                generated_at: new Date().toISOString(),
+                change_points: getChangePoints(),
+                predictions: predictionData
+            }, null, 2);
+            
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `prediction_results_${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+        
+        // Clear all
+        function clearAll() {
+            predictionData = [];
+            document.getElementById('resultsSection').style.display = 'none';
+            document.getElementById('resultsBody').innerHTML = '';
+            document.getElementById('changePointsContainer').innerHTML = '';
+            changePointIdCounter = 0;
+            Object.values(charts).forEach(chart => chart.destroy());
+            charts = {};
+            initializeChangePoints();
+        }
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('Prediction Tracker Loaded');
+            initializeChangePoints();
+            
+            // Update preview when final day changes
+            document.getElementById('finalDay').addEventListener('change', updatePreview);
+        });
+    </script>
+</body>
+</html>
