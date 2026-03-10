@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# Jupyter
+*.ipynb
+.ipynb_checkpoints/
+
+# Large data files
+*.xlsx
+*.csv
+
+# Build artifacts
+build/
+dist/
+*.spec
+*.zip
+
+# Local dev
+.env
+*.bat

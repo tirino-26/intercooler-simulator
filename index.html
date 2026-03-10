@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Intercooler Prediction Tracker</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Tahoma,sans-serif;background:linear-gradient(135deg,#0d1b2a 0%,#1b2838 100%);min-height:100vh;padding:20px;color:#e0e0e0}
+.container{max-width:1400px;margin:0 auto}
+
+/* Header */
+.header{text-align:center;padding:28px 20px;margin-bottom:28px;background:linear-gradient(135deg,#0f3460,#16213e);border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,.4)}
+.header h1{color:#00d4ff;font-size:2rem;margin-bottom:8px;letter-spacing:1px}
+.header p{color:#aaa;font-size:.95rem}
+
+/* Cards */
+.card{background:#1e3a5f;padding:24px;border-radius:16px;margin-bottom:24px;box-shadow:0 4px 15px rgba(0,0,0,.3)}
+.card h2{color:#00d4ff;margin-bottom:18px;border-bottom:2px solid #0f3460;padding-bottom:10px;font-size:1.15rem}
+.card h3{color:#00d4ff;margin-bottom:12px;font-size:1rem}
+
+/* Grid inputs */
+.input-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;margin-bottom:16px}
+.input-group label{display:block;margin-bottom:6px;color:#7ecfff;font-size:.88rem;font-weight:500}
+.input-group input,.input-group select{width:100%;padding:11px 14px;border:2px solid #0f3460;border-radius:8px;background:#16213e;color:#fff;font-size:.95rem;transition:border-color .25s}
+.input-group input:focus,.input-group select:focus{outline:none;border-color:#00d4ff}
+.input-group select option{background:#16213e}
+
+/* Change-point table */
+.cp-header{display:grid;grid-template-columns:110px 1fr 1fr 70px;gap:12px;padding:9px 14px;background:#0f3460;border-radius:8px;margin-bottom:8px;font-size:.85rem;font-weight:600;color:#00d4ff}
+.cp-row{display:grid;grid-template-columns:110px 1fr 1fr 70px;gap:12px;margin-bottom:8px;padding:8px 14px;background:#16213e;border-radius:8px;align-items:center}
+.cp-row input{width:100%;padding:9px 11px;border:2px solid #0f3460;border-radius:6px;background:#1a1a2e;color:#fff;font-size:.9rem}
+.cp-row input:focus{outline:none;border-color:#00d4ff}
+.description{color:#888;font-size:.85rem;margin-bottom:16px}
+
+/* Preview */
+.preview-box{background:#16213e;border-radius:8px;padding:14px;margin-top:16px;max-height:190px;overflow-y:auto}
+.preview-box h4{color:#00d4ff;margin-bottom:8px;font-size:.9rem}
+.preview-table{width:100%;font-size:.82rem;border-collapse:collapse}
+.preview-table th{color:#7ecfff;padding:5px 10px;border-bottom:1px solid #0f3460}
+.preview-table td{padding:5px 10px;text-align:center;border-bottom:1px solid #1b2838}
+.preview-highlight{background:rgba(0,212,255,.15)}
+
+/* Buttons */
+.btn{padding:11px 26px;border:none;border-radius:8px;font-size:.95rem;font-weight:600;cursor:pointer;transition:all .25s}
+.btn-run{background:linear-gradient(135deg,#00cc66,#009933);color:#fff}
+.btn-run:hover{transform:translateY(-2px);box-shadow:0 4px 14px rgba(0,204,102,.4)}
+.btn-clear{background:linear-gradient(135deg,#ff4444,#cc0000);color:#fff}
+.btn-clear:hover{transform:translateY(-2px);box-shadow:0 4px 14px rgba(255,68,68,.4)}
+.btn-add{background:linear-gradient(135deg,#00d4ff,#0099cc);color:#1a1a2e}
+.btn-add:hover{transform:translateY(-2px);box-shadow:0 4px 14px rgba(0,212,255,.4)}
+.btn-remove{background:linear-gradient(135deg,#ff6b6b,#ee5a5a);color:#fff;padding:7px 12px;font-size:.82rem;border:none;border-radius:6px;cursor:pointer;transition:all .2s}
+.btn-remove:hover{transform:scale(1.06)}
+.btn-export{background:linear-gradient(135deg,#00d4ff,#0099cc);color:#1a1a2e;padding:9px 20px;font-size:.88rem}
+.btn-group{display:flex;gap:14px;flex-wrap:wrap;margin-top:4px}
+
+/* Results */
+.table-wrap{overflow-x:auto;max-height:420px;overflow-y:auto;margin-bottom:24px}
+table{width:100%;border-collapse:collapse;min-width:900px;font-size:.88rem}
+th{background:linear-gradient(135deg,#0f3460,#1a1a2e);color:#00d4ff;padding:11px 14px;text-align:center;position:sticky;top:0;z-index:10;font-size:.82rem}
+td{padding:10px 14px;text-align:center;border-bottom:1px solid #0f3460}
+tr:hover{background:rgba(0,212,255,.08)}
+.row-change{background:rgba(0,212,255,.12)!important}
+.cell-warn{color:#ffcc00}
+
+/* Charts */
+.chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:4px}
+@media(max-width:900px){.chart-grid{grid-template-columns:1fr}}
+.chart-card{background:#16213e;padding:18px;border-radius:12px}
+.chart-card h4{color:#00d4ff;text-align:center;margin-bottom:12px;font-size:.9rem}
+.chart-box{position:relative;height:320px}
+
+/* Loading */
+.loading{display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:999;justify-content:center;align-items:center}
+.loading.active{display:flex}
+.spinner{width:56px;height:56px;border:5px solid #0f3460;border-top-color:#00d4ff;border-radius:50%;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Export */
+.export-row{display:flex;gap:14px;margin-top:14px}
+
+/* Badge */
+.badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:.78rem;font-weight:600}
+.badge-ok{background:#1a4a2e;color:#00cc66}
+.badge-warn{background:#4a3a00;color:#ffcc00}
+.badge-err{background:#4a1a1a;color:#ff6666}
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- Header -->
+<div class="header">
+  <h1>Intercooler Prediction Tracker</h1>
+  <p>Digital Twin for LDPE Heat Exchanger — K1202E1A (Physics Solver + ML Models)</p>
+</div>
+
+<!-- Loading -->
+<div class="loading" id="loadingOverlay"><div class="spinner"></div></div>
+
+<!-- Configuration -->
+<div class="card">
+  <h2>Configuration Settings</h2>
+  <div class="input-grid">
+    <div class="input-group">
+      <label>Operating Day (Final)</label>
+      <input type="number" id="maxDay" value="30" min="1" max="365">
+    </div>
+    <div class="input-group">
+      <label>LD-Grade</label>
+      <select id="ldGrade"><option value="">-- loading... --</option></select>
+    </div>
+    <div class="input-group">
+      <label>MFR — Gas Flow (ton/hr)</label>
+      <input type="number" id="mfr" value="100" min="1" step="0.1">
+    </div>
+    <div class="input-group">
+      <label>U₀ — Initial Clean U (W/m²·K)</label>
+      <input type="number" id="u0" value="500" min="50" max="2000" step="10">
+    </div>
+  </div>
+</div>
+
+<!-- Change Points -->
+<div class="card">
+  <h2>Input Change Points</h2>
+  <p class="description">
+    กำหนดค่า Inlet T CW และ Flow CW A ตาม Operating Day ที่ต้องการ<br>
+    ระบบจะ keep ค่าไปจนกว่าจะเจอ Day ใหม่ที่กำหนด (เรียงตาม Day จากน้อยไปมาก)
+  </p>
+  <div class="cp-header">
+    <span>Operating Day</span>
+    <span>Inlet T CW (°C)</span>
+    <span>Flow CW A (m³/hr)</span>
+    <span>Action</span>
+  </div>
+  <div id="changePointsContainer"></div>
+  <button class="btn btn-add" onclick="addChangePoint()" style="margin-top:10px">+ Add Row</button>
+
+  <!-- Preview -->
+  <div class="preview-box">
+    <h4>Preview: Daily Values (first 10 days)</h4>
+    <table class="preview-table">
+      <thead><tr><th>Day</th><th>Inlet T CW</th><th>Flow CW A</th></tr></thead>
+      <tbody id="previewBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Action Buttons -->
+<div class="card" style="padding:18px">
+  <div class="btn-group">
+    <button class="btn btn-run"   id="runBtn"   onclick="runPrediction()">▶ Run Prediction</button>
+    <button class="btn btn-clear" onclick="clearAll()">✕ Clear All</button>
+  </div>
+</div>
+
+<!-- Results -->
+<div class="card" id="resultsSection" style="display:none">
+  <h2>Prediction Results</h2>
+  <div class="table-wrap">
+    <table id="resultsTable">
+      <thead>
+        <tr>
+          <th>Operating Day</th>
+          <th>Inlet T CW (°C)</th>
+          <th>Flow CW A (m³/hr)</th>
+          <th>Inlet T gas A pre (°C)</th>
+          <th>Rf_pre</th>
+          <th>U_A_pre (W/m².K)</th>
+          <th>Cp_gas_A_pre (kW/K)</th>
+          <th>Q_A_pre (kW)</th>
+          <th>Outlet T CW A pre (°C)</th>
+          <th>Outlet T gas pre (°C)</th>
+        </tr>
+      </thead>
+      <tbody id="resultsBody"></tbody>
+    </table>
+  </div>
+  <div class="export-row">
+    <button class="btn btn-export" onclick="exportCSV()">⬇ Export CSV</button>
+    <button class="btn btn-export" onclick="exportJSON()">⬇ Export JSON</button>
+  </div>
+</div>
+
+<!-- Charts -->
+<div class="card" id="chartsSection" style="display:none">
+  <h2>Trend Charts</h2>
+  <div class="chart-grid">
+    <div class="chart-card">
+      <h4>Outlet T gas A pre (°C) vs Operating Day</h4>
+      <div class="chart-box"><canvas id="chartTgas"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h4>U_A_pre (W/m².K) vs Operating Day</h4>
+      <div class="chart-box"><canvas id="chartUA"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h4>Outlet T CW A pre (°C) vs Operating Day</h4>
+      <div class="chart-box"><canvas id="chartTCW"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h4>Inlet T gas A pre (°C) vs Operating Day</h4>
+      <div class="chart-box"><canvas id="chartTin"></canvas></div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /container -->
+
+<script>
+// ===========================================================================
+// State
+// ===========================================================================
+let allPredictions = [];
+let charts = {};
+
+// ===========================================================================
+// Init
+// ===========================================================================
+document.addEventListener('DOMContentLoaded', async () => {
+  await loadGrades();
+  addChangePoint(1, 32, 350);  // default first row
+  updatePreview();
+  ['maxDay'].forEach(id =>
+    document.getElementById(id).addEventListener('input', updatePreview)
+  );
+});
+
+async function loadGrades() {
+  try {
+    const res = await fetch('/api/grades');
+    const data = await res.json();
+    const sel = document.getElementById('ldGrade');
+    sel.innerHTML = '';
+    // Add blank option
+    const blank = document.createElement('option');
+    blank.value = ''; blank.textContent = '-- select grade --';
+    sel.appendChild(blank);
+    data.grades.forEach(g => {
+      const opt = document.createElement('option');
+      opt.value = g; opt.textContent = g;
+      sel.appendChild(opt);
+    });
+    if (data.grades.length > 0) sel.value = data.grades[0];
+  } catch(e) {
+    console.warn('Could not load grades', e);
+    const sel = document.getElementById('ldGrade');
+    sel.innerHTML = '<option value="">-- N/A --</option>';
+  }
+}
+
+// ===========================================================================
+// Change Points
+// ===========================================================================
+function addChangePoint(day, tCW, flowCW) {
+  const container = document.getElementById('changePointsContainer');
+  const row = document.createElement('div');
+  row.className = 'cp-row';
+  row.innerHTML = `
+    <input type="number" placeholder="Day" value="${day || ''}" min="1" class="cp-day" oninput="updatePreview()">
+    <input type="number" placeholder="32.0" value="${tCW || ''}" step="0.1" class="cp-tcw" oninput="updatePreview()">
+    <input type="number" placeholder="350" value="${flowCW || ''}" step="1" class="cp-flow" oninput="updatePreview()">
+    <button class="btn-remove" onclick="removeRow(this)">Remove</button>
+  `;
+  container.appendChild(row);
+  updatePreview();
+}
+
+function removeRow(btn) {
+  btn.closest('.cp-row').remove();
+  updatePreview();
+}
+
+function getChangePoints() {
+  const rows = document.querySelectorAll('.cp-row');
+  const pts = [];
+  rows.forEach(r => {
+    const day  = parseFloat(r.querySelector('.cp-day').value);
+    const tCW  = parseFloat(r.querySelector('.cp-tcw').value);
+    const flow = parseFloat(r.querySelector('.cp-flow').value);
+    if (!isNaN(day) && !isNaN(tCW) && !isNaN(flow))
+      pts.push({ day, tCW, flow });
+  });
+  return pts.sort((a, b) => a.day - b.day);
+}
+
+function getDailyValues(maxDay) {
+  const pts = getChangePoints();
+  if (pts.length === 0) return [];
+  const days = [];
+  for (let d = 1; d <= maxDay; d++) {
+    let tCW = pts[0].tCW, flow = pts[0].flow;
+    pts.forEach(p => { if (p.day <= d) { tCW = p.tCW; flow = p.flow; } });
+    days.push({ day: d, tCW, flow });
+  }
+  return days;
+}
+
+function updatePreview() {
+  const maxDay = parseInt(document.getElementById('maxDay').value) || 30;
+  const daily  = getDailyValues(Math.min(maxDay, 10));
+  const pts    = getChangePoints();
+  const changeSet = new Set(pts.map(p => p.day));
+  const tbody  = document.getElementById('previewBody');
+  tbody.innerHTML = '';
+  daily.forEach(d => {
+    const tr = document.createElement('tr');
+    if (changeSet.has(d.day)) tr.className = 'preview-highlight';
+    tr.innerHTML = `<td>${d.day}</td><td>${d.tCW}</td><td>${d.flow}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+// ===========================================================================
+// Prediction
+// ===========================================================================
+async function runPrediction() {
+  const maxDay  = parseInt(document.getElementById('maxDay').value);
+  const mfr     = parseFloat(document.getElementById('mfr').value);
+  const u0      = parseFloat(document.getElementById('u0').value);
+  const ldGrade = document.getElementById('ldGrade').value;
+
+  if (!maxDay || maxDay < 1) { alert('กรุณาใส่ Operating Day'); return; }
+  if (!mfr  || mfr  <= 0)   { alert('กรุณาใส่ MFR');           return; }
+  if (!u0   || u0   <= 0)   { alert('กรุณาใส่ U₀');            return; }
+
+  const daily = getDailyValues(maxDay);
+  if (daily.length === 0) { alert('กรุณากำหนด Change Points อย่างน้อย 1 row'); return; }
+
+  const pts = getChangePoints();
+  const changeSet = new Set(pts.map(p => p.day));
+
+  const dayInputs = daily.map(d => ({
+    operating_day:  d.day,
+    inlet_T_CW:     d.tCW,
+    flow_CW_A:      d.flow,
+    MFR:            mfr,
+    ld_grade:       ldGrade,
+    is_transition:  changeSet.has(d.day) ? 1 : 0,
+  }));
+
+  const payload = { day_inputs: dayInputs, U0: u0 };
+
+  showLoading(true);
+  document.getElementById('runBtn').disabled = true;
+  try {
+    const res = await fetch('/api/predict/batch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    allPredictions = data.predictions;
+    renderResults(allPredictions, changeSet);
+    renderCharts(allPredictions);
+    document.getElementById('resultsSection').style.display = '';
+    document.getElementById('chartsSection').style.display  = '';
+    document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth' });
+  } catch (e) {
+    alert(`Error: ${e.message}`);
+  } finally {
+    showLoading(false);
+    document.getElementById('runBtn').disabled = false;
+  }
+}
+
+function renderResults(preds, changeSet) {
+  const tbody = document.getElementById('resultsBody');
+  tbody.innerHTML = '';
+  preds.forEach(p => {
+    const tr = document.createElement('tr');
+    if (changeSet && changeSet.has(p.operating_day)) tr.className = 'row-change';
+    const gas  = p.outlet_T_gas_pre  != null ? p.outlet_T_gas_pre.toFixed(2)  : '<span class="badge badge-err">N/A</span>';
+    const tcw  = p.outlet_T_CW_A_pre != null ? p.outlet_T_CW_A_pre.toFixed(2) : '<span class="badge badge-err">N/A</span>';
+    const qA   = p.Q_A_pre           != null ? p.Q_A_pre.toFixed(1)           : '—';
+    tr.innerHTML = `
+      <td>${p.operating_day}</td>
+      <td>${p.inlet_T_CW.toFixed(2)}</td>
+      <td>${p.flow_CW_A.toFixed(1)}</td>
+      <td>${p.inlet_T_gas_A_pre.toFixed(2)}</td>
+      <td>${p.Rf_pre.toFixed(6)}</td>
+      <td>${p.U_A_pre.toFixed(2)}</td>
+      <td>${p.Cp_gas_A_pre.toFixed(4)}</td>
+      <td>${qA}</td>
+      <td>${tcw}</td>
+      <td>${gas}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// ===========================================================================
+// Charts
+// ===========================================================================
+const CHART_CFG = {
+  responsive: true, maintainAspectRatio: false,
+  plugins: { legend: { labels: { color: '#ccc', font: { size: 11 } } } },
+  scales: {
+    x: { ticks: { color: '#aaa', maxTicksLimit: 15 }, grid: { color: 'rgba(255,255,255,.06)' } },
+    y: { ticks: { color: '#aaa' }, grid: { color: 'rgba(255,255,255,.06)' } },
+  },
+};
+
+function makeChart(id, label, color, data, yLabel) {
+  if (charts[id]) charts[id].destroy();
+  const ctx = document.getElementById(id).getContext('2d');
+  charts[id] = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: data.map(d => d.x),
+      datasets: [{
+        label, data: data.map(d => d.y),
+        borderColor: color, backgroundColor: color + '22',
+        pointRadius: data.length <= 60 ? 3 : 0,
+        borderWidth: 2, fill: true, tension: 0.3,
+      }],
+    },
+    options: {
+      ...CHART_CFG,
+      scales: {
+        ...CHART_CFG.scales,
+        y: { ...CHART_CFG.scales.y, title: { display: true, text: yLabel, color: '#aaa' } },
+        x: { ...CHART_CFG.scales.x, title: { display: true, text: 'Operating Day', color: '#aaa' } },
+      },
+    },
+  });
+}
+
+function renderCharts(preds) {
+  const valid = preds.filter(p => p.outlet_T_gas_pre != null);
+  makeChart('chartTgas', 'Outlet T gas A pre (°C)', '#00d4ff',
+    valid.map(p => ({ x: p.operating_day, y: p.outlet_T_gas_pre })), '°C');
+  makeChart('chartUA', 'U_A_pre (W/m².K)', '#ffcc00',
+    preds.map(p => ({ x: p.operating_day, y: p.U_A_pre })), 'W/m².K');
+  makeChart('chartTCW', 'Outlet T CW A pre (°C)', '#ff9966',
+    valid.map(p => ({ x: p.operating_day, y: p.outlet_T_CW_A_pre })), '°C');
+  makeChart('chartTin', 'Inlet T gas A pre (°C)', '#66ff99',
+    preds.map(p => ({ x: p.operating_day, y: p.inlet_T_gas_A_pre })), '°C');
+}
+
+// ===========================================================================
+// Export
+// ===========================================================================
+function exportCSV() {
+  if (!allPredictions.length) return;
+  const headers = ['operating_day','inlet_T_CW','flow_CW_A','inlet_T_gas_A_pre',
+                   'Rf_pre','U_A_pre','Cp_gas_A_pre','Q_A_pre',
+                   'outlet_T_CW_A_pre','outlet_T_gas_pre'];
+  const rows = allPredictions.map(p =>
+    headers.map(h => p[h] != null ? p[h] : '').join(',')
+  );
+  download(headers.join(',') + '\n' + rows.join('\n'),
+    'intercooler_prediction.csv', 'text/csv');
+}
+
+function exportJSON() {
+  if (!allPredictions.length) return;
+  download(JSON.stringify(allPredictions, null, 2),
+    'intercooler_prediction.json', 'application/json');
+}
+
+function download(content, filename, mime) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content], { type: mime }));
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+// ===========================================================================
+// Helpers
+// ===========================================================================
+function clearAll() {
+  document.getElementById('changePointsContainer').innerHTML = '';
+  document.getElementById('previewBody').innerHTML = '';
+  document.getElementById('resultsBody').innerHTML = '';
+  document.getElementById('resultsSection').style.display = 'none';
+  document.getElementById('chartsSection').style.display  = 'none';
+  allPredictions = [];
+  addChangePoint(1, 32, 350);
+}
+
+function showLoading(on) {
+  document.getElementById('loadingOverlay').classList.toggle('active', on);
+}
+</script>
+</body>
+</html>
